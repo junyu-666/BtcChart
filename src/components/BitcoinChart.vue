@@ -12,11 +12,23 @@
 
 <script>
 import * as d3 from 'd3';
+import bitcoinEvents from '../assets/bitcoin-events.json';
 
 export default {
   name: 'BitcoinChart',
   data() {
+    const CHART_CONFIG = {
+      width: 1200,
+      height: 400,
+      margin: { top: 20, right: 120, bottom: 100, left: 50 },
+      eventAreaHeight: 100,
+      priceAreaHeight: 400,
+      displayPoints: 200,
+      animationDuration: 250000,
+    };
+
     return {
+      config: CHART_CONFIG,
       svg: null,
       line: null,
       xScale: null,
@@ -25,16 +37,19 @@ export default {
       priceData: [],
       animationTimer: null,
       currentPrice: null,
-      width: 800,
-      height: 400,
-      margin: { top: 20, right: 120, bottom: 30, left: 50 },
       errorMessage: null,
       currentDate: null,
       currentIndex: 1,
+      events: [],
+      visibleEvents: [],
     };
   },
   mounted() {
     this.initChart();
+    this.events = bitcoinEvents.events.map(event => ({
+      ...event,
+      date: new Date(event.date),
+    }));
     this.fetchBitcoinData();
   },
   beforeUnmount() {
@@ -44,31 +59,32 @@ export default {
   },
   methods: {
     initChart() {
+      const totalHeight = this.config.eventAreaHeight + this.config.priceAreaHeight + this.config.eventAreaHeight + 150;
+      
       const svg = d3.select('#chart')
         .append('svg')
-        .attr('width', this.width + this.margin.left + this.margin.right)
-        .attr('height', this.height + this.margin.top + this.margin.bottom + 80)
+        .attr('width', this.config.width + this.config.margin.left + this.config.margin.right)
+        .attr('height', totalHeight + this.config.margin.top + this.config.margin.bottom)
         .append('g')
-        .attr('transform', `translate(${this.margin.left},${this.margin.top})`);
+        .attr('transform', `translate(${this.config.margin.left},${this.config.margin.top + this.config.eventAreaHeight})`);
 
       this.svg = svg;
 
       // 初始化比例尺
       this.xScale = d3.scaleTime()
-        .range([0, this.width]);
+        .range([0, this.config.width]);
 
       this.yScale = d3.scaleLinear()
-        .range([this.height, 0]);
+        .range([this.config.priceAreaHeight, 0]);
 
       // 创建坐标轴
       this.xAxis = svg.append('g')
         .attr('class', 'x-axis')
-        .attr('transform', `translate(0,${this.height})`);
+        .attr('transform', `translate(0,${this.config.priceAreaHeight + this.config.eventAreaHeight})`);
 
       this.yAxis = svg.append('g')
-        .attr('class', 'y-axis');
-
-      this.yAxis.call(d3.axisLeft(this.yScale));
+        .attr('class', 'y-axis')
+        .attr('transform', 'translate(0,0)');
 
       // 隐藏所有轴线（包括主轴线和刻度线）
       this.yAxis.selectAll('.tick line')
@@ -96,32 +112,29 @@ export default {
 
       // 修改 x 轴主轴线的样式
       this.xAxis.select('path.domain')
-        .attr('d', `M0.5,0.5H${this.width + 0.5}`); // 使用 SVG path 命令画一条完整的直线
+        .attr('d', `M0.5,0.5H${this.config.width + 0.5}`); // 使用 SVG path 命令画一条完整的直线
 
       // 添加略缩图容器
-      const miniHeight = 40;
-      const handleHeight = 50; // 柄的高度比略缩图高
-      const handleOverflow = (handleHeight - miniHeight) / 2; // 计算柄超出的部分
       this.miniContainer = svg.append('g')
         .attr('class', 'mini-chart')
-        .attr('transform', `translate(0,${this.height + 40})`);
+        .attr('transform', `translate(0,${this.config.priceAreaHeight + this.config.eventAreaHeight + 80})`);
 
       // 添加略缩图背景
       this.miniContainer.append('rect')
         .attr('class', 'mini-background')
         .attr('x', 0)
         .attr('y', 0)
-        .attr('width', this.width)
-        .attr('height', miniHeight)
+        .attr('width', this.config.width)
+        .attr('height', 40)
         .attr('fill', '#F5F5F5') // 使用白色加一点点灰色
         .attr('rx', 4);
 
       // 创建略缩图比例尺
       this.miniXScale = d3.scaleTime()
-        .range([0, this.width]);
+        .range([0, this.config.width]);
 
       this.miniYScale = d3.scaleLinear()
-        .range([miniHeight, 0]);
+        .range([40, 0]);
 
       // 创建略缩图径
       this.miniLine = d3.line()
@@ -143,27 +156,27 @@ export default {
         .attr('x', 0)
         .attr('y', 0)
         .attr('width', 0)
-        .attr('height', miniHeight)
+        .attr('height', 40)
         .attr('fill', '#e6f3ff')
         .attr('opacity', 0.7);
 
       // 添加左侧柄
       this.leftHandle = this.miniContainer.append('rect')
         .attr('class', 'progress-handle left-handle')
-        .attr('x', 0)
-        .attr('y', -handleOverflow) // 向上偏移以居中
+        .attr('x', -2) // 向左偏移2px以对齐略缩图边缘
+        .attr('y', -5) // 向上延伸5px
         .attr('width', 4)
-        .attr('height', handleHeight)
+        .attr('height', 50) // 增加高度使其延伸超出略缩图
         .attr('fill', '#1890ff')
         .attr('rx', 2);
 
       // 添加右侧柄
       this.rightHandle = this.miniContainer.append('rect')
         .attr('class', 'progress-handle right-handle')
-        .attr('x', 0)
-        .attr('y', -handleOverflow) // 向上偏移以居中
+        .attr('x', -2) // 初始位置向左偏移2px
+        .attr('y', -5) // 向上延伸5px
         .attr('width', 4)
-        .attr('height', handleHeight)
+        .attr('height', 50) // 增加高度使其延伸超出略缩图
         .attr('fill', '#1890ff')
         .attr('rx', 2);
 
@@ -171,27 +184,27 @@ export default {
       this.startDateText = this.miniContainer.append('text')
         .attr('class', 'date-label start-date')
         .attr('x', 0)
-        .attr('y', miniHeight + 20)
+        .attr('y', 40 + 20)
         .attr('text-anchor', 'start')
         .attr('fill', '#666')
-        .attr('font-size', '12px');
+        .attr('font-size', '15px');
 
       // 添加右侧日期文本
       this.endDateText = this.miniContainer.append('text')
         .attr('class', 'date-label end-date')
-        .attr('x', this.width)
-        .attr('y', miniHeight + 20)
+        .attr('x', this.config.width)
+        .attr('y', 40 + 20)
         .attr('text-anchor', 'end')
         .attr('fill', '#666')
-        .attr('font-size', '12px');
+        .attr('font-size', '15px');
 
       // 添加当前进度日期文本
       this.currentDateText = this.miniContainer.append('text')
         .attr('class', 'date-label current-date')
-        .attr('y', miniHeight + 20)
+        .attr('y', 40 + 20)
         .attr('text-anchor', 'middle')
         .attr('fill', '#666')  // 使用和柄相同的颜色
-        .attr('font-size', '12px');
+        .attr('font-size', '15px');
 
       // 创建渐变定义
       const gradient = svg.append("defs")
@@ -234,7 +247,7 @@ export default {
       feMerge.append("feMergeNode")
         .attr("in", "SourceGraphic");
 
-      // 修改路径元素，使用渐变色和阴影
+      // 修路径元素，使用渐变色和阴影
       this.path = svg.append('path')
         .attr('class', 'line')
         .attr('fill', 'none')
@@ -245,7 +258,7 @@ export default {
       // 创建面积生成器用于阴影效果
       this.area = d3.area()
         .x(d => this.xScale(new Date(d.date)))
-        .y0(this.height)
+        .y0(this.config.height)
         .y1(d => this.yScale(d.price))
         .curve(d3.curveCatmullRom);
 
@@ -257,12 +270,12 @@ export default {
         .attr("x1", 0)
         .attr("y1", 0)
         .attr("x2", 0)
-        .attr("y2", this.height);
+        .attr("y2", this.config.height);
 
       areaGradient.append("stop")
         .attr("offset", "0%")
         .attr("stop-color", "#1890ff")  // 使用相同的蓝色
-        .attr("stop-opacity", 0.2);     // 降低透明度
+        .attr("stop-opacity", 0.2);     // 降低透明
 
       areaGradient.append("stop")
         .attr("offset", "100%")
@@ -274,7 +287,7 @@ export default {
         .attr('class', 'area')
         .attr('fill', 'url(#area-gradient)');
 
-      // 创建点的发散动画效果
+      // 创建点的发散动画效
       const pulseFilter = svg.append("defs")
         .append("filter")
         .attr("id", "pulse")
@@ -309,6 +322,29 @@ export default {
         .attr("offset", "100%")
         .attr("stop-color", "#1890ff")
         .attr("stop-opacity", 0);
+
+      // 添加裁剪区域定义
+      this.clipPath = svg.append("defs")
+        .append("clipPath")
+        .attr("id", "chart-area")
+        .append("rect")
+        .attr("x", 0)
+        .attr("y", -this.config.eventAreaHeight)
+        .attr("width", this.config.width)
+        .attr("height", this.config.priceAreaHeight + this.config.eventAreaHeight * 2);
+
+      // 创建一个包含事件容器的组，并应用裁剪
+      const eventClipGroup = svg.append('g')
+        .attr('clip-path', 'url(#chart-area)');
+
+      // 将事件容器移到裁剪组内
+      this.topEventContainer = eventClipGroup.append('g')
+        .attr('class', 'top-event-container')
+        .attr('transform', `translate(0,${-this.config.eventAreaHeight})`);
+
+      this.bottomEventContainer = eventClipGroup.append('g')
+        .attr('class', 'bottom-event-container')
+        .attr('transform', `translate(0,${this.config.priceAreaHeight})`);
     },
 
     updateChart() {
@@ -316,46 +352,47 @@ export default {
 
       // 获取要显示的数据
       let displayData;
-      if (this.priceData.length >= 120) {
-        // 如果 priceData 超过120个点，取最后120个
-        this.priceData = this.priceData.slice(-120);
-        displayData = this.priceData.slice(-120);
+      if (this.priceData.length >= this.config.displayPoints) {
+        // 如果数据超过300个点，取最后300个
+        displayData = this.priceData.slice(-this.config.displayPoints);
+        this.priceData = this.priceData.slice(-this.config.displayPoints);
       } else {
-        // 如果 priceData 不足120个点，从 data 中取前120个
-        displayData = this.data.slice(0, 120);
+        // 如果数据不足300个，则取this.data的前300个数据点
+        displayData = this.data.slice(0, this.config.displayPoints);
       }
 
-      // 更新Y轴范围
-      const yMin = d3.min(this.priceData, d => d.price);
-      const yMax = d3.max(this.priceData, d => d.price);
-      this.yScale.domain([yMin * 0.9, yMax * 1.1]);
+      // 修改Y轴范围，使用 priceData 计算
+      const yMin = d3.min(displayData, d => d.price);
+      const yMax = d3.max(displayData, d => d.price);
+      const yPadding = (yMax - yMin) * 0.2; // 添加20%的padding使图表不会太贴边
+      this.yScale.domain([yMin - yPadding, yMax + yPadding]);
 
-      // 使用正确的方式更新 Y 轴
-      this.yAxis
-        .transition()
-        .duration(300)
-        .call(d3.axisLeft(this.yScale));
-
-      // 确保轴线保持隐藏（包括主轴线）
-      this.yAxis.selectAll('.tick line')
-        .style('display', 'none');
-      this.yAxis.selectAll('path.domain')
-        .style('display', 'none');
-      this.yAxis.selectAll('.tick text')
-        .style('display', 'block');
+      // 更新Y轴
+      this.yAxis.call(
+        d3.axisLeft(this.yScale)
+          .ticks(5)  // 设置刻度数量为 5
+          .tickFormat(d => `$${d.toLocaleString()}`)
+      )
+      .call(g => {
+        g.selectAll('.tick line').remove();  // 移除刻度线
+        g.select('.domain').remove();        // 移除主轴线
+        g.selectAll('.tick text')            // 设置文本样式
+          .attr('x', -10)
+          .style('text-anchor', 'end')
+          .style('display', 'block');
+      });
 
       // 更新X轴范围
       const xMin = d3.min(displayData, d => new Date(d.date));
       const xMax = d3.max(displayData, d => new Date(d.date));
       this.xScale.domain([xMin, xMax]);
 
-      // 更新坐标轴
+      // 更新坐标轴，增加刻度数量
       this.xAxis.call(
         d3.axisBottom(this.xScale)
-          .ticks(10)
-          .tickFormat(d3.timeFormat("%m/%d"))
+          .ticks(6) // 增加刻度数量从10到15
+          .tickFormat(d3.timeFormat("%Y/%m/%d"))
       );
-      this.yAxis.call(d3.axisLeft(this.yScale));
 
       // 更新路径数据
       this.path
@@ -367,7 +404,7 @@ export default {
         .datum(this.priceData)
         .attr('d', this.area);
 
-      // 在最后一个数据点加一个圆点，并在圆点右侧展示价格
+      // 在最后一个数据点加一个圆点，并在圆点右侧展示格
       const lastDataPoint = this.priceData[this.priceData.length - 1];
       this.svg.selectAll('.last-point').remove();
       this.svg.selectAll('.pulse-circle').remove();
@@ -415,7 +452,7 @@ export default {
         .attr('dy', '.35em')
         .attr('fill', '#333333')  // 使用黑色
         .style('font-weight', 'bold')
-        .style('font-size', '14px')
+        .style('font-size', '20px')
         .text(`$${lastDataPoint.price.toFixed(2)}`);
 
       // 更新当前价格
@@ -424,7 +461,7 @@ export default {
 
       // 重新应用 x 轴主轴线的样式
       this.xAxis.select('path.domain')
-        .attr('d', `M0.5,0.5H${this.width + 0.5}`);
+        .attr('d', `M0.5,0.5H${this.config.width + 0.5}`);
 
       // 更新略缩图
       // 使用完整的数据集更新略缩图
@@ -442,14 +479,14 @@ export default {
         .attr('d', this.miniLine);
 
       // 更新进度遮罩和柄的位置
-      const maskWidth = this.width * (this.currentIndex / this.data.length);
+      const maskWidth = this.config.width * (this.currentIndex / this.data.length);
       this.progressMask
         .attr('x', 0)
         .attr('width', maskWidth);
 
-      // 更新左侧柄位置（固定在遮罩左侧）
+      // 更新左侧柄位置（固定在略缩图左侧边缘）
       this.leftHandle
-        .attr('x', 0);
+        .attr('x', -2); // 向左偏移2px以对齐略缩图边缘
 
       // 更新右侧柄位置（跟随遮罩右侧边缘）
       this.rightHandle
@@ -471,7 +508,7 @@ export default {
         this.endDateText.text(dateFormatter.format(endDate));
       }
 
-      // 更新当前日期文本位置和内容
+      // 更当前日期文本位置和内容
       if (this.currentIndex > 0 && this.currentIndex <= this.data.length) {
         const currentDate = new Date(this.data[this.currentIndex - 1].date);
         const dateFormatter = new Intl.DateTimeFormat('zh-CN', {
@@ -496,20 +533,31 @@ export default {
 
         // 处理结束日期文本的显示/隐藏
         this.endDateText.style('display', 
-          currentX + textWidth/2 > this.width - textWidth - margin ? 'none' : 'block');
+          currentX + textWidth/2 > this.config.width - textWidth - margin ? 'none' : 'block');
       }
 
       // 更新渐变的范围
       d3.select("#line-gradient")
         .attr("y1", this.yScale(d3.min(this.priceData, d => d.price)))
         .attr("y2", this.yScale(d3.max(this.priceData, d => d.price)));
+
+      // 更新裁剪区域的范围
+      const clipX = this.xScale(new Date(this.priceData[0].date));
+      const clipWidth = this.xScale(new Date(this.priceData[this.priceData.length - 1].date)) - clipX;
+
+      this.clipPath
+        .attr("x", clipX)
+        .attr("width", clipWidth);
+      
+      // 在所有图表元素更新后再更新事件标记
+      this.addEventMarkers();
     },
 
     startAnimation() {
       this.currentIndex = 1;
-      const animationDuration = 300000; // 总动画时长（毫秒）
+      const animationDuration = this.config.animationDuration; // 总动画时长（毫秒）
       const totalPoints = this.data.length;
-      const animationSpeed = Math.floor(animationDuration / totalPoints); // 每个点的动画间隔
+      const animationSpeed = Math.floor(animationDuration / totalPoints); // 每点的动画间隔
 
       this.priceData = this.data.slice(0, this.currentIndex);
       this.updateChart();
@@ -587,6 +635,174 @@ export default {
         console.error('获取比特币数据失败:', error);
         this.errorMessage = '比特币价格获取失败，请稍后重试';
       }
+    },
+
+    // 添加事件标记的方法
+    addEventMarkers() {
+      // 清除现有事件标记
+      this.topEventContainer.selectAll('*').remove();
+      this.bottomEventContainer.selectAll('*').remove();
+
+      // 获取当前最新价格数据点的日期
+      const currentDate = this.priceData[this.priceData.length - 1]?.date;
+      if (!currentDate) return;
+
+      // 计算未来60天的日期
+      const futureDate = new Date(currentDate);
+      futureDate.setDate(futureDate.getDate() + 60);
+
+      // 获取当前可见的事件：在当前日期之后且在未来60天内的事件
+      this.visibleEvents = this.events.filter(event => {
+        const pastDate = new Date(currentDate);
+        pastDate.setDate(pastDate.getDate() - this.config.displayPoints - 120);
+        return event.date > pastDate && event.date <= futureDate;
+      });
+
+      // 其余代码保持不变
+      const topEvents = this.visibleEvents.filter(event => event.type === 'positive');
+      const bottomEvents = this.visibleEvents.filter(event => event.type === 'negative');
+
+      const addEventGroup = (events, container, isTop) => {
+        // 用于存储已放置事件的位置信息
+        const placedEvents = [];
+        
+        events.forEach((event) => {
+          const x = this.xScale(event.date);
+          let baseY = isTop ? this.config.eventAreaHeight / 2 : this.config.eventAreaHeight / 2;
+          
+          // 创建文本元素以获取其尺寸
+          const tempText = container.append('text')
+            .attr('font-size', '14px')
+            .text(event.text);
+          const bbox = tempText.node().getBBox();
+          tempText.remove();
+
+          // 计算事件标记的宽度和高度（包含padding）
+          const padding = 8;
+          const eventWidth = bbox.width + padding * 2;
+          const eventHeight = bbox.height + padding * 2;
+          
+          // 检查重叠并调整y坐标
+          let yOffset = 0;
+          let overlap = true;
+          const maxAttempts = 10; // 最大尝试次数
+          let attempts = 0;
+          
+          while (overlap && attempts < maxAttempts) {
+            overlap = placedEvents.some(placed => {
+              const xOverlap = Math.abs(placed.x - x) < (eventWidth + 20); // 添加20px的额外间距
+              const yOverlap = Math.abs((baseY + yOffset) - placed.y) < (eventHeight + 5);
+              return xOverlap && yOverlap;
+            });
+
+            if (overlap) {
+              // 根据是顶部还是底部事件调整偏移方向
+              yOffset += isTop ? eventHeight : -eventHeight;
+              attempts++;
+            }
+          }
+
+          // 记录已放置的事件位置
+          placedEvents.push({
+            x: x,
+            y: baseY + yOffset,
+            width: eventWidth,
+            height: eventHeight
+          });
+
+          const y = baseY + yOffset;
+
+          // 添加事件标记组
+          const eventGroup = container.append('g')
+            .attr('class', 'event-group')
+            .style('opacity', 1)
+            .attr('transform', `translate(${x},${y})`);
+
+          const text = event.text;
+          
+          // 先创建文本元素以获取其尺寸
+          const textElement = eventGroup.append('text')
+            .attr('x', 0)
+            .attr('y', 0)
+            .attr('text-anchor', 'middle')
+            .attr('dominant-baseline', 'middle') // 添加垂直居中对齐
+            .attr('fill', '#333')
+            .attr('font-size', '14px')
+            .text(text);
+          
+          // 获取文本的边界框
+          const bbbox = textElement.node().getBBox();
+
+          // 添加背景框，调整定位计算
+          eventGroup.insert('rect', 'text')
+            .attr('x', -bbbox.width/2 - padding) // 居中对齐
+            .attr('y', -bbbox.height/2 - padding) // 垂直居中对齐
+            .attr('width', bbbox.width + padding * 2)
+            .attr('height', bbbox.height + padding * 2)
+            .attr('rx', 4)
+            .attr('fill', 'white')
+            .attr('fill-opacity', 0.9)
+            .attr('stroke', event.type === 'positive' ? '#52c41a' : '#ff4d4f')
+            .attr('stroke-width', 1);
+        
+          // 计算价格点的y坐标
+          const pricePoint = this.data.find(d => d.date.getTime() === event.date.getTime());
+          let priceY = 0;
+          
+          if (pricePoint) {
+            if (isTop) {
+              // 对于顶部事件，连接到价格点
+              priceY = this.yScale(pricePoint.price) + this.config.eventAreaHeight;
+            } else {
+              // 对于底部事件，连接到价格点
+              priceY = this.config.priceAreaHeight - this.yScale(pricePoint.price);
+            }
+          }
+          
+          // 修改连接线的路径，考虑偏移后的位置
+          const lineStart = isTop ? 
+            [x, y + (eventHeight / 2)] : 
+            [x, y - (eventHeight / 2)];
+          
+          const lineEnd = isTop ? [x, priceY] : [x, -priceY];
+
+          // 添加连接线的渐变定义
+          const gradientId = `line-gradient-${event.date.getTime()}`;
+          container.append("defs")
+            .append("linearGradient")
+            .attr("id", gradientId)
+            .attr("gradientUnits", "userSpaceOnUse")
+            .attr("x1", 0)
+            .attr("y1", lineStart[1])
+            .attr("x2", 0)
+            .attr("y2", lineEnd[1])
+            .selectAll("stop")
+            .data([
+              { offset: "0%", color: event.type === 'positive' ? '#52c41a' : '#ff4d4f', opacity: 0.8 },
+              { offset: "100%", color: event.type === 'positive' ? '#52c41a' : '#ff4d4f', opacity: 0.2 }
+            ])
+            .enter().append("stop")
+            .attr("offset", d => d.offset)
+            .attr("stop-color", d => d.color)
+            .attr("stop-opacity", d => d.opacity);
+
+          // 修改连接线样式
+          container.append('path')
+            .attr('class', 'connector-line')
+            .attr('d', d3.line()([lineStart, lineEnd]))
+            .attr('stroke', `url(#${gradientId})`)
+            .attr('stroke-width', 1.5) // 增加线条宽度
+            .attr('fill', 'none')
+            .style('opacity', 1); // 增加不透明度
+            // 移除 stroke-dasharray
+
+          textElement.raise();
+        });
+      };
+
+      // 分别添加上下两组事件
+      addEventGroup(topEvents, this.topEventContainer, true);
+      addEventGroup(bottomEvents, this.bottomEventContainer, false);
     }
   },
   computed: {
@@ -602,6 +818,10 @@ export default {
 .bitcoin-chart {
   padding: 20px;
   position: relative;
+  /* 添加水平滚动支持 */
+  overflow-x: auto;
+  /* 确保容器能完整显示更宽的图表 */
+  min-width: 1200px;
 }
 
 .error-message {
@@ -622,11 +842,16 @@ export default {
 
 .date-label {
   position: absolute;
-  top: -20px;
+  top: 10px;
   left: 70px;
   font-size: 24px;
   font-weight: bold;
   color: #666;
+  background-color: white;
+  padding: 5px 10px;
+  z-index: 1000;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .mini-line {
@@ -640,6 +865,7 @@ export default {
 .progress-handle {
   cursor: pointer;
   transition: all 0.1s ease;
+  filter: drop-shadow(0 0 2px rgba(24, 144, 255, 0.5));
 }
 
 .progress-handle:hover {
@@ -657,5 +883,33 @@ export default {
 
 .price-text {
   transition: all 0.3s ease;
+}
+
+.event-marker {
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.event-marker:hover {
+  transform: scale(1.5);
+}
+
+.event-group {
+  transition: all 0.3s ease;
+}
+
+.event-group text {
+  font-size: 14px;
+  fill: #333;
+}
+
+/* 添加阴影滤镜 */
+.bitcoin-chart >>> #shadow {
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+}
+
+.connector-line {
+  transition: all 0.3s ease;
+  pointer-events: none;
 }
 </style> 

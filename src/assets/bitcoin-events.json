@@ -1,0 +1,384 @@
+{
+  "events": [
+    {
+      "date": "2017-01-03",
+      "text": "比特币突破1000美元大关",
+      "type": "positive"
+    },
+    {
+      "date": "2017-03-10",
+      "text": "SEC首次否决比特币ETF申请",
+      "type": "negative"
+    },
+    {
+      "date": "2017-04-01",
+      "text": "日本正式承认比特币为支付手段",
+      "type": "positive"
+    },
+    {
+      "date": "2017-05-21",
+      "text": "首个闪电网络比特币支付测试成功",
+      "type": "positive"
+    },
+    {
+      "date": "2017-08-01",
+      "text": "比特币发生硬分叉,比特币现金(BCH)诞生",
+      "type": "neutral"
+    },
+    {
+      "date": "2017-09-04",
+      "text": "中国监管机构宣布ICO非法,加密货币交易所关闭",
+      "type": "negative"
+    },
+    {
+      "date": "2017-10-31",
+      "text": "芝加哥商品交易所宣布推出比特币期货",
+      "type": "positive"
+    },
+    {
+      "date": "2017-11-08",
+      "text": "SegWit2x硬分叉计划取消",
+      "type": "neutral"
+    },
+    {
+      "date": "2017-12-10",
+      "text": "CBOE推出首个比特币期货合约",
+      "type": "positive"
+    },
+    {
+      "date": "2017-12-17",
+      "text": "比特币价格首次突破19,783美元",
+      "type": "positive"
+    },
+    {
+      "date": "2017-12-28",
+      "text": "韩国加强加密货币交易监管",
+      "type": "negative"
+    },
+    {
+      "date": "2018-01-26",
+      "text": "日本Coincheck交易所遭黑客攻击损失5.32亿美元",
+      "type": "negative"
+    },
+    {
+      "date": "2018-03-14",
+      "text": "Google宣布禁止加密货币相关广告",
+      "type": "negative"
+    },
+    {
+      "date": "2018-05-15",
+      "text": "纽约共识大会召开,但未能提振市场",
+      "type": "neutral"
+    },
+    {
+      "date": "2018-06-10",
+      "text": "韩国加密货币交易所Coinrail遭黑客攻击",
+      "type": "negative"
+    },
+    {
+      "date": "2018-08-08",
+      "text": "SEC再次否决多个比特币ETF申请",
+      "type": "negative"
+    },
+    {
+      "date": "2018-09-20",
+      "text": "Ripple推出xRapid产品,带动XRP大涨",
+      "type": "positive"
+    },
+    {
+      "date": "2018-11-15",
+      "text": "BCH分裂为BCHABC和BCHSV两条链",
+      "type": "neutral"
+    },
+    {
+      "date": "2018-11-20",
+      "text": "比特币跌破4,000美元,创2017年以来新低",
+      "type": "negative"
+    },
+    {
+      "date": "2018-12-13",
+      "text": "纳斯达克确认2019年将推出比特币期货",
+      "type": "positive"
+    },
+    {
+      "date": "2018-12-20",
+      "text": "G20就加密资产监管达成共识",
+      "type": "neutral"
+    },
+    {
+      "date": "2019-01-03",
+      "text": "比特币创世区块十周年纪念日",
+      "type": "neutral"
+    },
+    {
+      "date": "2019-02-28",
+      "text": "JP摩根推出JPM Coin,成为首个由美国大型银行发行的加密货币",
+      "type": "neutral"
+    },
+    {
+      "date": "2019-04-02",
+      "text": "比特币价格突破5,000美元,市场情绪回暖",
+      "type": "positive"
+    },
+    {
+      "date": "2019-05-07",
+      "text": "币安交易所遭黑客攻击,损失7,000比特币",
+      "type": "negative"
+    },
+    {
+      "date": "2019-05-27",
+      "text": "比特币价格突破8,000美元,创2018年7月以来新高",
+      "type": "positive"
+    },
+    {
+      "date": "2019-06-18",
+      "text": "Facebook宣布推出加密货币Libra计划",
+      "type": "neutral"
+    },
+    {
+      "date": "2019-09-23",
+      "text": "Bakkt比特币期货正式上线交易",
+      "type": "positive"
+    },
+    {
+      "date": "2019-10-25",
+      "text": "比特币单日暴涨42%,创下历史第三大单日涨幅",
+      "type": "positive"
+    },
+    {
+      "date": "2019-11-22",
+      "text": "中国开展打击虚拟货币交易活动",
+      "type": "negative"
+    },
+    {
+      "date": "2019-12-18",
+      "text": "YouTube大规模删除加密货币相关内容",
+      "type": "negative"
+    },
+    {
+      "date": "2020-02-13",
+      "text": "比特币突破10,000美元大关",
+      "type": "positive"
+    },
+    {
+      "date": "2020-03-12",
+      "text": "黑色星期四,比特币暴跌50%至3,850美元",
+      "type": "negative"
+    },
+    {
+      "date": "2020-03-25",
+      "text": "美联储无限量QE政策出台",
+      "type": "positive"
+    },
+    {
+      "date": "2020-05-11",
+      "text": "比特币第三次减半,区块奖励减至6.25个",
+      "type": "neutral"
+    },
+    {
+      "date": "2020-07-22",
+      "text": "美国银行业获准为加密货币公司提供托管服务",
+      "type": "positive"
+    },
+    {
+      "date": "2020-08-11",
+      "text": "MicroStrategy首次购买2.5亿美元比特币",
+      "type": "positive"
+    },
+    {
+      "date": "2020-09-14",
+      "text": "Kraken获得美国银行牌照",
+      "type": "positive"
+    },
+    {
+      "date": "2020-10-08",
+      "text": "Square公司购入5000万美元比特币",
+      "type": "positive"
+    },
+    {
+      "date": "2020-10-21",
+      "text": "PayPal宣布支持加密货币买卖服务",
+      "type": "positive"
+    },
+    {
+      "date": "2020-12-16",
+      "text": "比特币首次突破20,000美元",
+      "type": "positive"
+    },
+    {
+      "date": "2021-01-07",
+      "text": "比特币首次突破40,000美元",
+      "type": "positive"
+    },
+    {
+      "date": "2021-02-08",
+      "text": "特斯拉购买15亿美元比特币",
+      "type": "positive"
+    },
+    {
+      "date": "2021-02-19",
+      "text": "比特币市值首次突破1万亿美元",
+      "type": "positive"
+    },
+    {
+      "date": "2021-04-14",
+      "text": "Coinbase在纳斯达克上市,估值850亿美元",
+      "type": "positive"
+    },
+    {
+      "date": "2021-05-12",
+      "text": "特斯拉暂停接受比特币支付,称环保问题",
+      "type": "negative"
+    },
+    {
+      "date": "2021-05-19",
+      "text": "比特币暴跌30%至30,000美元,市场大幅波动",
+      "type": "negative"
+    },
+    {
+      "date": "2021-06-09",
+      "text": "萨尔瓦多通过法案将比特币作为法定货币",
+      "type": "positive"
+    },
+    {
+      "date": "2021-07-21",
+      "text": "B Word会议,马斯克确认特斯拉仍持有比特币",
+      "type": "positive"
+    },
+    {
+      "date": "2021-09-07",
+      "text": "萨尔瓦多比特币法正式生效",
+      "type": "positive"
+    },
+    {
+      "date": "2021-10-19",
+      "text": "首只比特币期货ETF在美国上市",
+      "type": "positive"
+    },
+    {
+      "date": "2021-11-10",
+      "text": "比特币创历史新高69,000美元",
+      "type": "positive"
+    },
+    {
+      "date": "2021-11-14",
+      "text": "比特币完成Taproot升级",
+      "type": "positive"
+    },
+    {
+      "date": "2021-12-04",
+      "text": "比特币大跌近20%,市场恐慌加剧",
+      "type": "negative"
+    },
+    {
+      "date": "2022-01-21",
+      "text": "比特币跌破40,000美元,科技股暴跌引发加密市场动荡",
+      "type": "negative"
+    },
+    {
+      "date": "2022-02-24",
+      "text": "俄乌战争爆发,比特币暴跌至34,000美元",
+      "type": "negative"
+    },
+    {
+      "date": "2022-03-09",
+      "text": "拜登签署加密货币监管行政令",
+      "type": "neutral"
+    },
+    {
+      "date": "2022-04-05",
+      "text": "中非共和国宣布采用比特币为法定货币",
+      "type": "positive"
+    },
+    {
+      "date": "2022-05-07",
+      "text": "UST脱锚导致LUNA崩溃,加密市场遭重创",
+      "type": "negative"
+    },
+    {
+      "date": "2022-06-18",
+      "text": "比特币跌破20,000美元,创2020年底以来新低",
+      "type": "negative"
+    },
+    {
+      "date": "2022-07-05",
+      "text": "加密对冲基金Three Arrows Capital破产清算",
+      "type": "negative"
+    },
+    {
+      "date": "2022-09-15",
+      "text": "以太坊完成合并升级,转为权益证明机制",
+      "type": "positive"
+    },
+    {
+      "date": "2022-11-11",
+      "text": "全球第二大交易所FTX申请破产",
+      "type": "negative"
+    },
+    {
+      "date": "2022-12-13",
+      "text": "FTX创始人SBF被捕并面临刑事指控",
+      "type": "negative"
+    },
+    {
+      "date": "2023-01-19",
+      "text": "DCG旗下加密货币经纪商Genesis申请破产保护",
+      "type": "negative"
+    },
+    {
+      "date": "2023-03-10",
+      "text": "硅谷银行倒闭引发USDC脱锚",
+      "type": "negative"
+    },
+    {
+      "date": "2023-06-05",
+      "text": "美国SEC起诉币安违反证券法规",
+      "type": "negative"
+    },
+    {
+      "date": "2023-08-17",
+      "text": "比特币跌破26,000美元,机构抛售压力加大",
+      "type": "negative"
+    },
+    {
+      "date": "2023-10-23",
+      "text": "比特币突破35,000美元,ETF获批预期升温",
+      "type": "positive"
+    },
+    {
+      "date": "2023-12-06",
+      "text": "比特币突破44,000美元,创下19个月新高",
+      "type": "positive"
+    },
+    {
+      "date": "2024-01-10",
+      "text": "美国SEC批准11只比特币现货ETF上市",
+      "type": "positive"
+    },
+    {
+      "date": "2024-01-25",
+      "text": "比特币ETF净流入超过10亿美元",
+      "type": "positive"
+    },
+    {
+      "date": "2024-02-14",
+      "text": "比特币突破52,000美元,创下2021年12月以来新高",
+      "type": "positive"
+    },
+    {
+      "date": "2024-02-28",
+      "text": "比特币市值重返1万亿美元",
+      "type": "positive"
+    },
+    {
+      "date": "2024-03-14",
+      "text": "比特币突破73,000美元再创新高",
+      "type": "positive"
+    },
+    {
+      "date": "2024-04-20",
+      "text": "比特币第四次减半,区块奖励减至3.125个",
+      "type": "neutral"
+    }
+  ]
+}
