@@ -1,5 +1,14 @@
 <template>
   <div class="bitcoin-chart">
+    <div class="control-panel">
+      <button 
+        class="control-btn" 
+        @click="toggleAnimation"
+        :disabled="isLoading"
+      >
+        {{ isLoading ? '加载中...' : (isPlaying ? '暂停' : '播放') }}
+      </button>
+    </div>
     <div id="chart"></div>
     <div class="error-message" v-if="errorMessage">
       {{ errorMessage }}
@@ -25,6 +34,7 @@ export default {
       priceAreaHeight: 400,
       displayPoints: 200,
       animationDuration: 250000,
+      audio: null,
       colors: {
         primary: '#1890ff',
         positive: '#52c41a',
@@ -45,9 +55,11 @@ export default {
       currentPrice: null,
       errorMessage: null,
       currentDate: null,
-      currentIndex: 1,
+      currentIndex: 0,
       events: [],
       visibleEvents: [],
+      isPlaying: false,
+      isLoading: true,
     };
   },
   mounted() {
@@ -57,10 +69,18 @@ export default {
       date: new Date(event.date),
     }));
     this.fetchBitcoinData();
+    // 仅初始化音频，不自动播放
+    this.audio = new Audio(require('../assets/Ryan Taubert - Absolution.ogg'));
+    this.audio.loop = true;
   },
   beforeUnmount() {
     if (this.animationTimer) {
       clearInterval(this.animationTimer);
+    }
+    // 停止并清理音频
+    if (this.audio) {
+      this.audio.pause();
+      this.audio = null;
     }
   },
   methods: {
@@ -560,12 +580,18 @@ export default {
     },
 
     startAnimation() {
-      this.currentIndex = 1;
-      const animationDuration = this.config.animationDuration; // 总动画时长（毫秒）
+      // 开始播放音频
+      this.audio.play();
+      const animationDuration = this.config.animationDuration;
       const totalPoints = this.data.length;
-      const animationSpeed = Math.floor(animationDuration / totalPoints); // 每点的动画间隔
+      const animationSpeed = Math.floor(animationDuration / totalPoints);
 
-      this.priceData = this.data.slice(0, this.currentIndex);
+      // 如果是第一次播放或已经播放完成，从头开始
+      if (this.currentIndex === 0 || this.currentIndex >= this.data.length) {
+        this.currentIndex = 1;
+        this.priceData = this.data.slice(0, this.currentIndex);
+      }
+      
       this.updateChart();
 
       if (this.animationTimer) {
@@ -575,6 +601,8 @@ export default {
       this.animationTimer = setInterval(() => {
         if (this.currentIndex >= this.data.length) {
           clearInterval(this.animationTimer);
+          this.isPlaying = false;
+          this.audio.pause();
           return;
         }
 
@@ -586,13 +614,17 @@ export default {
 
     async fetchBitcoinData() {
       try {
+        this.isLoading = true;  // 开始加载
         const data = await this.fetchHistoricalData();
         this.processData(data);
-        this.startAnimation();
+        this.currentIndex = 0;
+        this.priceData = [];
         this.errorMessage = null;
       } catch (error) {
         console.error('获取比特币数据失败:', error);
         this.errorMessage = '比特币价格获取失败，请稍后重试';
+      } finally {
+        this.isLoading = false;  // 加载完成
       }
     },
 
@@ -844,7 +876,21 @@ export default {
       // 分别添加上下两组事件
       addEventGroup(topEvents, this.topEventContainer, true);
       addEventGroup(bottomEvents, this.bottomEventContainer, false);
-    }
+    },
+
+    toggleAnimation() {
+      if (this.isPlaying) {
+        // 暂停动画和音频
+        if (this.animationTimer) {
+          clearInterval(this.animationTimer);
+        }
+        this.audio.pause();
+      } else {
+        // 从当前位置继续播放
+        this.startAnimation();
+      }
+      this.isPlaying = !this.isPlaying;
+    },
   },
   computed: {
     progressPercentage() {
@@ -960,5 +1006,40 @@ export default {
 
 .event-pulse-animation {
   pointer-events: none;
+}
+
+.control-panel {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+}
+
+.control-btn {
+  padding: 8px 16px;
+  font-size: 16px;
+  color: white;
+  background-color: #1890ff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.control-btn:hover {
+  background-color: #40a9ff;
+}
+
+.control-btn:active {
+  background-color: #096dd9;
+}
+
+.control-btn:disabled {
+  background-color: #d9d9d9;
+  cursor: not-allowed;
+}
+
+.control-btn:disabled:hover {
+  background-color: #d9d9d9;
 }
 </style> 

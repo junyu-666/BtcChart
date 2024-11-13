@@ -29,7 +29,6 @@
   ```json
   {
     "date": "事件发生时间",
-    "title": "事件标题",
     "description": "事件描述",
     "type": "事件类型（positive/negative/neutral）"
   }
