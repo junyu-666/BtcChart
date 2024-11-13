@@ -25,6 +25,12 @@ export default {
       priceAreaHeight: 400,
       displayPoints: 200,
       animationDuration: 250000,
+      colors: {
+        primary: '#1890ff',
+        positive: '#52c41a',
+        negative: '#ff4d4f',
+        line: '#ff9900'
+      }
     };
 
     return {
@@ -98,7 +104,7 @@ export default {
       this.line = d3.line()
         .x(d => this.xScale(new Date(d.date)))
         .y(d => this.yScale(d.price))
-        .curve(d3.curveCatmullRom); // 使用Catmull-Rom曲线
+        .curve(d3.curveBasis); // 使用Catmull-Rom曲线
 
       // 创建路径元素
       this.path = svg.append('path')
@@ -140,7 +146,7 @@ export default {
       this.miniLine = d3.line()
         .x(d => this.miniXScale(new Date(d.date)))
         .y(d => this.miniYScale(d.price))
-        .curve(d3.curveCatmullRom);
+        .curve(d3.curveBasis);
 
       // 添加略缩图路径
       this.miniPath = this.miniContainer.append('path')
@@ -260,7 +266,7 @@ export default {
         .x(d => this.xScale(new Date(d.date)))
         .y0(this.config.height)
         .y1(d => this.yScale(d.price))
-        .curve(d3.curveCatmullRom);
+        .curve(d3.curveBasis);
 
       // 添加渐变填充区域
       const areaGradient = svg.append("defs")
@@ -580,55 +586,8 @@ export default {
 
     async fetchBitcoinData() {
       try {
-        // 计算时间范围
-        const now = new Date();
-        const endTime = now.getTime();
-        const tenYearsAgo = new Date(now.setFullYear(now.getFullYear() - 8));
-        let startTime = tenYearsAgo.getTime();
-        
-        let allData = [];
-        
-        // 分段获取数据，每次获取1000条
-        while (startTime < endTime) {
-          const response = await fetch(
-            `https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1d&startTime=${startTime}&limit=365`
-          );
-
-          if (!response.ok) {
-            throw new Error('网络响应不正常');
-          }
-
-          const data = await response.json();
-          if (data.length === 0) break; // 如果没有更多数据则退出
-
-          allData = allData.concat(data);
-          
-          // 更新开始时间为最后一条数的时间加一天
-          startTime = data[data.length - 1][0] + 24 * 60 * 60 * 1000;
-          
-          // 添加延时以避免触发频率限制
-          await new Promise(resolve => setTimeout(resolve, 300));
-        }
-
-        // 处理数据
-        this.data = allData
-          .map(item => ({
-            date: new Date(item[0]),
-            price: parseFloat(item[4]) // 使用收盘价
-          }))
-          .sort((a, b) => a.date - b.date); // 确保按时间排序
-
-
-        // 确保包含最新的数据点
-        const lastPoint = allData[allData.length - 1];
-        const lastDate = new Date(lastPoint[0]);
-        if (this.data[this.data.length - 1].date < lastDate) {
-          this.data.push({
-            date: lastDate,
-            price: parseFloat(lastPoint[4])
-          });
-        }
-
+        const data = await this.fetchHistoricalData();
+        this.processData(data);
         this.startAnimation();
         this.errorMessage = null;
       } catch (error) {
@@ -637,30 +596,95 @@ export default {
       }
     },
 
-    // 添加事件标记的方法
+    async fetchHistoricalData() {
+      const now = new Date();
+      const endTime = now.getTime();
+      const startTime = new Date(now.setFullYear(now.getFullYear() - 8)).getTime();
+      
+      let allData = [];
+      let currentStartTime = startTime;
+
+      while (currentStartTime < endTime) {
+        const data = await this.fetchDataChunk(currentStartTime);
+        if (!data.length) break;
+        
+        allData = allData.concat(data);
+        currentStartTime = data[data.length - 1][0] + 24 * 60 * 60 * 1000;
+        
+        await this.delay(300);
+      }
+
+      return allData;
+    },
+
+    async fetchDataChunk(startTime) {
+      const response = await fetch(
+        `https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1d&startTime=${startTime}&limit=365`
+      );
+
+      if (!response.ok) {
+        throw new Error('网络响应不正常');
+      }
+
+      return response.json();
+    },
+
+    processData(allData) {
+      this.data = allData
+        .map(item => ({
+          date: new Date(item[0]),
+          price: parseFloat(item[4])
+        }))
+        .sort((a, b) => a.date - b.date);
+
+      // 添加最新数据点
+      const lastPoint = allData[allData.length - 1];
+      const lastDate = new Date(lastPoint[0]);
+      if (this.data[this.data.length - 1].date < lastDate) {
+        this.data.push({
+          date: lastDate,
+          price: parseFloat(lastPoint[4])
+        });
+      }
+    },
+
+    delay(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    },
+
     addEventMarkers() {
-      // 清除现有事件标记
+      this.clearEventContainers();
+      if (!this.shouldAddEvents()) return;
+
+      const visibleEvents = this.getVisibleEvents();
+      this.addEventGroups(visibleEvents);
+    },
+
+    clearEventContainers() {
       this.topEventContainer.selectAll('*').remove();
       this.bottomEventContainer.selectAll('*').remove();
+    },
 
-      // 获取当前最新价格数据点的日期
-      const currentDate = this.priceData[this.priceData.length - 1]?.date;
-      if (!currentDate) return;
+    shouldAddEvents() {
+      return this.priceData[this.priceData.length - 1]?.date;
+    },
 
-      // 计算未来60天的日期
+    getVisibleEvents() {
+      const currentDate = this.priceData[this.priceData.length - 1].date;
       const futureDate = new Date(currentDate);
       futureDate.setDate(futureDate.getDate() + 60);
+      
+      const pastDate = new Date(currentDate);
+      pastDate.setDate(pastDate.getDate() - this.config.displayPoints - 120);
 
-      // 获取当前可见的事件：在当前日期之后且在未来60天内的事件
-      this.visibleEvents = this.events.filter(event => {
-        const pastDate = new Date(currentDate);
-        pastDate.setDate(pastDate.getDate() - this.config.displayPoints - 120);
-        return event.date > pastDate && event.date <= futureDate;
-      });
+      return this.events.filter(event => 
+        event.date > pastDate && event.date <= futureDate
+      );
+    },
 
-      // 其余代码保持不变
-      const topEvents = this.visibleEvents.filter(event => event.type === 'positive');
-      const bottomEvents = this.visibleEvents.filter(event => event.type === 'negative');
+    addEventGroups(events) {
+      const topEvents = events.filter(event => event.type === 'positive');
+      const bottomEvents = events.filter(event => event.type === 'negative');
 
       const addEventGroup = (events, container, isTop) => {
         // 用于存储已放置事件的位置信息
@@ -742,8 +766,8 @@ export default {
             .attr('rx', 4)
             .attr('fill', 'white')
             .attr('fill-opacity', 0.9)
-            .attr('stroke', event.type === 'positive' ? '#52c41a' : '#ff4d4f')
-            .attr('stroke-width', 1);
+            .attr('stroke-width', 1)
+            .style('filter', 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))'); // 添加阴影效果;
         
           // 计算价格点的y坐标
           const pricePoint = this.data.find(d => d.date.getTime() === event.date.getTime());
@@ -765,6 +789,23 @@ export default {
             [x, y - (eventHeight / 2)];
           
           const lineEnd = isTop ? [x, priceY] : [x, -priceY];
+
+          // 添加外层发散效果圆圈
+          container.append('circle')
+            .attr('class', 'event-glow-circle')
+            .attr('cx', lineStart[0])
+            .attr('cy', lineStart[1])
+            .attr('r', 6)
+            .attr('fill', event.type === 'positive' ? '#52c41a' : '#ff4d4f')
+            .attr('opacity', 0.3);
+
+          // 添加内层实心圆圈
+          container.append('circle')
+            .attr('class', 'event-center-circle')
+            .attr('cx', lineStart[0])
+            .attr('cy', lineStart[1])
+            .attr('r', 3)
+            .attr('fill', event.type === 'positive' ? '#52c41a' : '#ff4d4f');
 
           // 添加连接线的渐变定义
           const gradientId = `line-gradient-${event.date.getTime()}`;
@@ -910,6 +951,14 @@ export default {
 
 .connector-line {
   transition: all 0.3s ease;
+  pointer-events: none;
+}
+
+.event-pulse-circle {
+  filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.2));
+}
+
+.event-pulse-animation {
   pointer-events: none;
 }
 </style> 
